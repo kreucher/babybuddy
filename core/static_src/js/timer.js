@@ -12,6 +12,7 @@ BabyBuddy.Timer = (function ($) {
   var timerElement = null;
   var lastUpdate = new Date();
   var hidden = null;
+  var visibilityChange = null;
 
   var Timer = {
     run: function (timer_id, element_id) {
@@ -39,10 +40,20 @@ BabyBuddy.Timer = (function ($) {
       // phones that lock with the timer page open.
       if (typeof document.hidden !== "undefined") {
         hidden = "hidden";
+        visibilityChange = "visibilitychange";
       } else if (typeof document.msHidden !== "undefined") {
         hidden = "msHidden";
+        visibilityChange = "msvisibilitychange";
       } else if (typeof document.webkitHidden !== "undefined") {
         hidden = "webkitHidden";
+        visibilityChange = "webkitvisibilitychange";
+      }
+      if (visibilityChange !== null) {
+        document.addEventListener(
+          visibilityChange,
+          Timer.handleVisibilityChange,
+          false,
+        );
       }
       window.addEventListener("focus", Timer.handleVisibilityChange, false);
     },
@@ -78,7 +89,7 @@ BabyBuddy.Timer = (function ($) {
     },
 
     update: function () {
-      $.get("/api/timers/" + timerId + "/", function (data) {
+      $.get("../../api/timers/" + timerId + "/", function (data) {
         if (data && "duration" in data) {
           clearInterval(runIntervalId);
           var duration = data.duration.split(/[\s:.]/);
