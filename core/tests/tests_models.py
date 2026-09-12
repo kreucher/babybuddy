@@ -3,6 +3,7 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
@@ -330,6 +331,47 @@ class TimerTestCase(TestCase):
         self.assertEqual(str(self.named), "Named")
         self.assertEqual(self.unnamed, models.Timer.objects.get(name=None))
         self.assertEqual(str(self.unnamed), "Timer #{}".format(self.unnamed.id))
+        self.assertEqual(self.named.purpose, models.Timer.PURPOSE_GENERIC)
+
+    def test_one_breastfeeding_timer_per_child(self):
+        timer = models.Timer.objects.create(user=self.user, child=self.named.child)
+        models.TimerPurpose.objects.create(
+            timer=timer,
+            child=self.named.child,
+            purpose=models.Timer.PURPOSE_BREASTFEEDING,
+        )
+        with self.assertRaises(ValidationError):
+            other_timer = models.Timer.objects.create(
+                user=self.user, child=self.named.child
+            )
+            models.TimerPurpose.objects.create(
+                timer=other_timer,
+                child=self.named.child,
+                purpose=models.Timer.PURPOSE_BREASTFEEDING,
+            )
+
+        other_child = models.Child.objects.create(
+            first_name="Other", last_name="Child", birth_date=timezone.localdate()
+        )
+        other_timer = models.Timer.objects.create(user=self.user, child=other_child)
+        models.TimerPurpose.objects.create(
+            timer=other_timer,
+            child=other_child,
+            purpose=models.Timer.PURPOSE_BREASTFEEDING,
+        )
+        models.Timer.objects.create(user=self.user, child=self.named.child)
+
+    def test_timer_purpose_child_must_match_timer_child(self):
+        other_child = models.Child.objects.create(
+            first_name="Mismatch", last_name="Child", birth_date=timezone.localdate()
+        )
+        timer = models.Timer.objects.create(user=self.user, child=self.named.child)
+        with self.assertRaises(ValidationError):
+            models.TimerPurpose.objects.create(
+                timer=timer,
+                child=other_child,
+                purpose=models.Timer.PURPOSE_BREASTFEEDING,
+            )
 
     def test_timer_title_with_child(self):
         self.assertEqual(self.named.title_with_child, str(self.named))

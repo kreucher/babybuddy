@@ -135,7 +135,7 @@ class TemperatureViewSet(viewsets.ModelViewSet):
 
 
 class TimerViewSet(viewsets.ModelViewSet):
-    queryset = models.Timer.objects.all()
+    queryset = models.Timer.objects.select_related("purpose_record").all()
     serializer_class = serializers.TimerSerializer
     filterset_class = filters.TimerFilter
     ordering_fields = ("duration", "end", "start")

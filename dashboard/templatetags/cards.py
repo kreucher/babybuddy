@@ -178,6 +178,30 @@ def card_breastfeeding(context, child, date=None):
     }
 
 
+@register.inclusion_tag("cards/breastfeeding_controls.html", takes_context=True)
+def card_breastfeeding_controls(context, child):
+    perms = context["perms"]
+    if perms["core"]["view_timer"]:
+        timer = (
+            models.Timer.objects.filter(
+                child=child,
+                purpose_record__purpose=models.Timer.PURPOSE_BREASTFEEDING,
+            )
+            .select_related("child", "user")
+            .first()
+        )
+    else:
+        timer = None
+    return {
+        "type": "feeding",
+        "child": child,
+        "timer": timer,
+        "empty": False,
+        "hide_empty": False,
+        "perms": perms,
+    }
+
+
 @register.inclusion_tag("cards/feeding_recent.html", takes_context=True)
 def card_feeding_recent(context, child, end_date=None):
     """
@@ -822,10 +846,12 @@ def card_timer_list(context, child=None):
     if child:
         # Get active instances for the selected child _or_ None (no child).
         instances = models.Timer.objects.filter(
-            Q(child=child) | Q(child=None)
+            Q(child=child) | Q(child=None), purpose_record__isnull=True
         ).order_by("-start")
     else:
-        instances = models.Timer.objects.order_by("-start")
+        instances = models.Timer.objects.filter(purpose_record__isnull=True).order_by(
+            "-start"
+        )
     empty = len(instances) == 0
 
     return {

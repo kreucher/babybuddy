@@ -5,3 +5,20 @@
         color: map.get($theme-colors, 'dark');
     }
 }
+
+.breastfeeding-stale {
+    border-color: var(--bs-warning) !important;
+
+    &.alert,
+    .card-header {
+        background-color: rgba(var(--bs-warning-rgb), 0.2);
+    }
+}
+
+.breastfeeding-stale-warning {
+    display: none;
+}
+
+.breastfeeding-stale .breastfeeding-stale-warning {
+    display: inline;
+}

@@ -1,0 +1,74 @@
+{% extends "cards/base.html" %}
+{% load i18n %}
+{% block header %}
+    {% trans "Breastfeeding" %}
+{% endblock %}
+{% block title %}
+    {% if timer %}
+        {% trans "Feeding in progress" %}
+    {% else %}
+        {% trans "Ready" %}
+    {% endif %}
+{% endblock %}
+{% block content %}
+    {% if timer %}
+        <p class="breastfeeding-elapsed fs-3 mb-3"
+           data-breastfeeding-start="{{ timer.start|date:'c' }}"
+           aria-hidden="true">00:00</p>
+        <p class="small text-body-secondary">
+            {% blocktrans trimmed with start=timer.start|time %}
+                Started at {{ start }}
+            {% endblocktrans %}
+        </p>
+        <p class="breastfeeding-stale-warning text-warning fw-semibold"
+           role="alert">{% trans "This timer may have been forgotten" %}</p>
+        {% if perms.core.view_child and perms.core.view_timer and perms.core.add_feeding and perms.core.delete_timer %}
+            <p class="mb-2">{% trans "Finish and save" %}</p>
+            <div class="d-grid gap-2">
+                <form method="post" action="{% url 'core:breastfeeding-finish' timer.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="method" value="left breast" />
+                    <button class="btn btn-primary btn-lg w-100" type="submit">{% trans "Left breast" %}</button>
+                </form>
+                <form method="post" action="{% url 'core:breastfeeding-finish' timer.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="method" value="right breast" />
+                    <button class="btn btn-primary btn-lg w-100" type="submit">{% trans "Right breast" %}</button>
+                </form>
+                <form method="post" action="{% url 'core:breastfeeding-finish' timer.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="method" value="both breasts" />
+                    <button class="btn btn-primary btn-lg w-100" type="submit">{% trans "Both breasts" %}</button>
+                </form>
+            </div>
+        {% endif %}
+        {% if perms.core.view_child and perms.core.view_timer and perms.core.delete_timer %}
+            <form class="mt-3"
+                  method="post"
+                  action="{% url 'core:breastfeeding-cancel' timer.id %}"
+                  onsubmit="return window.confirm('{% trans "Discard this breastfeeding timer without saving?" %}')">
+                {% csrf_token %}
+                <button class="btn btn-outline-danger w-100" type="submit">{% trans "Discard timer" %}</button>
+            </form>
+        {% endif %}
+    {% else %}
+        {% if perms.core.add_timer and perms.core.view_child and perms.core.view_timer %}
+            <form method="post"
+                  action="{% url 'core:breastfeeding-start' child.slug %}">
+                {% csrf_token %}
+                <button class="btn btn-success btn-lg w-100" type="submit">{% trans "Start breastfeeding" %}</button>
+            </form>
+        {% endif %}
+        {% if perms.core.add_feeding %}
+            <p class="small text-body-secondary mt-3 mb-2">{% trans "Add a feeding ending now" %}</p>
+            <div class="btn-group w-100" role="group">
+                <a class="btn btn-outline-primary"
+                   href="{% url 'core:feeding-add' %}?child={{ child.slug }}&preset=breastfeeding&duration=10">10 {% trans "min" %}</a>
+                <a class="btn btn-outline-primary"
+                   href="{% url 'core:feeding-add' %}?child={{ child.slug }}&preset=breastfeeding&duration=20">20 {% trans "min" %}</a>
+                <a class="btn btn-outline-primary"
+                   href="{% url 'core:feeding-add' %}?child={{ child.slug }}&preset=breastfeeding&duration=30">30 {% trans "min" %}</a>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

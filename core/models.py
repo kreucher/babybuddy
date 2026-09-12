@@ -618,6 +618,8 @@ class Temperature(models.Model):
 
 class Timer(models.Model):
     model_name = "timer"
+    PURPOSE_GENERIC = "generic"
+    PURPOSE_BREASTFEEDING = "breastfeeding"
     child = models.ForeignKey(
         "Child",
         blank=True,
@@ -667,6 +669,13 @@ class Timer(models.Model):
             return self.user.get_full_name()
         return self.user.get_username()
 
+    @property
+    def purpose(self):
+        try:
+            return self.purpose_record.purpose
+        except TimerPurpose.DoesNotExist:
+            return self.PURPOSE_GENERIC
+
     def duration(self):
         return timezone.now() - self.start
 
@@ -685,6 +694,37 @@ class Timer(models.Model):
 
     def clean(self):
         validate_time(self.start, "start")
+
+
+class TimerPurpose(models.Model):
+    """Optional purpose marker kept separate for stock migration compatibility."""
+
+    timer = models.OneToOneField(
+        Timer, on_delete=models.CASCADE, related_name="purpose_record"
+    )
+    child = models.ForeignKey(Child, on_delete=models.CASCADE)
+    purpose = models.CharField(
+        choices=[(Timer.PURPOSE_BREASTFEEDING, _("Breastfeeding"))], max_length=32
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("child", "purpose"),
+                name="one_breastfeeding_timer_per_child",
+            )
+        ]
+
+    def clean(self):
+        if self.timer_id and self.child_id != self.timer.child_id:
+            raise ValidationError(
+                {"child": _("Purpose child must match timer child.")},
+                code="timer_purpose_child_mismatch",
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class TummyTime(models.Model):

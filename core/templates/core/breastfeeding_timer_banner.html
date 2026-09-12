@@ -1,0 +1,13 @@
+{% load i18n %}
+{% for timer in timers %}
+    <div class="alert alert-info breastfeeding-timer-banner" role="status">
+        <strong>{% trans "Breastfeeding in progress" %}</strong>
+        — {{ timer.child }}
+        <span class="breastfeeding-elapsed ms-2"
+              data-breastfeeding-start="{{ timer.start|date:'c' }}"
+              aria-hidden="true">00:00</span>
+        <span class="breastfeeding-stale-warning ms-2 fw-semibold">{% trans "This timer may have been forgotten" %}</span>
+        <a class="alert-link ms-2"
+           href="{% url 'dashboard:dashboard-child' timer.child.slug %}">{% trans "Open controls" %}</a>
+    </div>
+{% endfor %}

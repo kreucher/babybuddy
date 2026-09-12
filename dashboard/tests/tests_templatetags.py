@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth import get_user_model
+from django.contrib.auth.context_processors import PermWrapper
 from django.test import TestCase
 from django.utils import timezone
 
 from babybuddy.models import Settings
 from core import models
+from core.templatetags import timers as timer_tags
 from dashboard.templatetags import cards
 
 from unittest import mock
@@ -371,6 +373,52 @@ class TemplateTagsTestCase(TestCase):
         self.assertTrue(timers["no_child"] in data["instances"])
         self.assertTrue(timers["child_two"] in data["instances"])
         self.assertFalse(timers["child"] in data["instances"])
+
+    def test_card_breastfeeding_controls_is_child_specific(self):
+        user = get_user_model().objects.first()
+        child_two = models.Child.objects.create(
+            first_name="Child", last_name="Other", birth_date=timezone.localdate()
+        )
+        generic = models.Timer.objects.create(user=user, child=self.child)
+        breastfeeding = models.Timer.objects.create(user=user, child=self.child)
+        models.TimerPurpose.objects.create(
+            timer=breastfeeding,
+            child=self.child,
+            purpose=models.Timer.PURPOSE_BREASTFEEDING,
+        )
+        child_two_timer = models.Timer.objects.create(user=user, child=child_two)
+        models.TimerPurpose.objects.create(
+            timer=child_two_timer,
+            child=child_two,
+            purpose=models.Timer.PURPOSE_BREASTFEEDING,
+        )
+        context = {**self.context, "perms": PermWrapper(user)}
+
+        data = cards.card_breastfeeding_controls(context, self.child)
+        self.assertEqual(data["timer"], breastfeeding)
+        self.assertNotEqual(data["timer"], generic)
+        self.assertIsNone(
+            cards.card_breastfeeding_controls(
+                context,
+                models.Child.objects.create(
+                    first_name="No", last_name="Timer", birth_date=timezone.localdate()
+                ),
+            )["timer"]
+        )
+
+    def test_global_breastfeeding_banner_ignores_generic_timers(self):
+        user = get_user_model().objects.first()
+        models.Timer.objects.create(user=user, child=self.child)
+        breastfeeding = models.Timer.objects.create(user=user, child=self.child)
+        models.TimerPurpose.objects.create(
+            timer=breastfeeding,
+            child=self.child,
+            purpose=models.Timer.PURPOSE_BREASTFEEDING,
+        )
+        data = timer_tags.breastfeeding_timer_banner(
+            {"perms": PermWrapper(get_user_model().objects.first())}
+        )
+        self.assertEqual(list(data["timers"]), [breastfeeding])
 
     def test_card_tummytime_last(self):
         data = cards.card_tummytime_last(self.context, self.child)

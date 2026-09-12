@@ -78,6 +78,71 @@ class InitialValuesTestCase(FormsTestCaseBase):
         page = self.c.get("/sleep/add/?child={}".format(child_two.slug))
         self.assertEqual(page.context["form"].initial["child"], child_two)
 
+    def test_breastfeeding_duration_presets(self):
+        for minutes in (10, 20, 30):
+            with self.subTest(minutes=minutes):
+                page = self.c.get(
+                    "/feedings/add/",
+                    {
+                        "child": self.child.slug,
+                        "preset": "breastfeeding",
+                        "duration": minutes,
+                    },
+                )
+                initial = page.context["form"].initial
+                self.assertEqual(initial["type"], "breast milk")
+                self.assertEqual(
+                    initial["end"] - initial["start"],
+                    timezone.timedelta(minutes=minutes),
+                )
+                self.assertLess(
+                    timezone.now() - initial["end"], timezone.timedelta(seconds=1)
+                )
+
+    def test_breastfeeding_preset_does_not_inherit_bottle_method(self):
+        models.Feeding.objects.create(
+            child=self.child,
+            start=timezone.now() - timezone.timedelta(minutes=30),
+            end=timezone.now() - timezone.timedelta(minutes=20),
+            type="breast milk",
+            method="bottle",
+        )
+        page = self.c.get(
+            "/feedings/add/",
+            {
+                "child": self.child.slug,
+                "preset": "breastfeeding",
+                "duration": 10,
+            },
+        )
+        self.assertNotEqual(page.context["form"].initial.get("method"), "bottle")
+
+    def test_invalid_breastfeeding_duration_is_ignored(self):
+        page = self.c.get(
+            "/feedings/add/",
+            {
+                "child": self.child.slug,
+                "preset": "breastfeeding",
+                "duration": 45,
+            },
+        )
+        self.assertNotIn("start", page.context["form"].initial)
+        self.assertNotIn("end", page.context["form"].initial)
+
+    def test_timer_takes_precedence_over_duration_preset(self):
+        page = self.c.get(
+            "/feedings/add/",
+            {
+                "child": self.child.slug,
+                "timer": self.timer.id,
+                "preset": "breastfeeding",
+                "duration": 10,
+            },
+        )
+        initial = page.context["form"].initial
+        self.assertEqual(initial["start"], self.timer.start)
+        self.assertLess(timezone.now() - initial["end"], timezone.timedelta(seconds=1))
+
     def test_feeding_type(self):
         child_two = models.Child.objects.create(
             first_name="Child", last_name="Two", birth_date=timezone.localdate()

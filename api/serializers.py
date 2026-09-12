@@ -5,6 +5,7 @@ from rest_framework.exceptions import ValidationError
 
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from taggit.serializers import TagListSerializerField, TaggitSerializer
 
@@ -265,13 +266,24 @@ class TimerSerializer(CoreModelSerializer):
         required=False,
     )
     duration = serializers.DurationField(read_only=True, required=False)
+    purpose = serializers.CharField(read_only=True)
 
     class Meta:
         model = models.Timer
-        fields = ("id", "child", "name", "start", "duration", "user")
+        fields = ("id", "child", "name", "purpose", "start", "duration", "user")
 
     def validate(self, attrs):
         attrs = super(TimerSerializer, self).validate(attrs)
+
+        if (
+            self.instance
+            and self.instance.purpose != models.Timer.PURPOSE_GENERIC
+            and "child" in attrs
+            and attrs["child"] != self.instance.child
+        ):
+            raise ValidationError(
+                {"child": _("The child of a purpose-specific timer cannot be changed.")}
+            )
 
         # Set user to current user if no value is provided.
         if "user" not in attrs or attrs["user"] is None:

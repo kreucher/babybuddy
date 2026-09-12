@@ -791,6 +791,7 @@ class TimerAPITestCase(TestBase.BabyBuddyAPITestCaseBase):
         response = self.client.get(self.endpoint)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["results"][0]["id"], 1)
+        self.assertEqual(response.data["results"][0]["purpose"], "generic")
 
     def test_post(self):
         data = {"name": "New fake timer", "user": 1}
@@ -819,6 +820,26 @@ class TimerAPITestCase(TestBase.BabyBuddyAPITestCaseBase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["name"], entry["name"])
+
+    def test_purpose_timer_child_cannot_be_changed(self):
+        user = get_user_model().objects.first()
+        child = models.Child.objects.first()
+        other_child = models.Child.objects.exclude(pk=child.pk).first()
+        if other_child is None:
+            other_child = models.Child.objects.create(
+                first_name="API", last_name="Child", birth_date=timezone.localdate()
+            )
+        timer = models.Timer.objects.create(user=user, child=child)
+        models.TimerPurpose.objects.create(
+            timer=timer,
+            child=child,
+            purpose=models.Timer.PURPOSE_BREASTFEEDING,
+        )
+        endpoint = "{}{}/".format(self.endpoint, timer.pk)
+        response = self.client.patch(endpoint, {"child": other_child.pk}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        timer.refresh_from_db()
+        self.assertEqual(timer.child, child)
 
     def test_start_restart_timer(self):
         endpoint = "{}{}/".format(self.endpoint, 1)

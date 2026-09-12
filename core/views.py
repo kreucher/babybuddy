@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.db.models import Count
 from django.db.models.functions import Lower
 from django.forms import Form
 from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.translation import gettext as _
+from django.utils.html import format_html, format_html_join
 from django.views.generic.base import RedirectView, TemplateView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView, FormView
@@ -49,7 +53,7 @@ class CoreAddView(PermissionRequiredMixin, SuccessMessageMixin, CreateView):
         :return: Updated keyword arguments.
         """
         kwargs = super(CoreAddView, self).get_form_kwargs()
-        for parameter in ["child", "timer"]:
+        for parameter in ["child", "timer", "preset", "duration"]:
             value = self.request.GET.get(parameter, None)
             if value:
                 kwargs.update({parameter: value})
@@ -210,6 +214,143 @@ class FeedingDelete(CoreDeleteView):
     model = models.Feeding
     permission_required = ("core.delete_feeding",)
     success_url = reverse_lazy("core:feeding-list")
+
+
+class BreastfeedingStart(PermissionRequiredMixin, RedirectView):
+    http_method_names = ["post"]
+    permission_required = ("core.view_child", "core.view_timer", "core.add_timer")
+
+    def post(self, request, *args, **kwargs):
+        child = get_object_or_404(models.Child, slug=kwargs["slug"])
+        try:
+            with transaction.atomic():
+                purpose = (
+                    models.TimerPurpose.objects.select_related("timer")
+                    .filter(
+                        child=child,
+                        purpose=models.Timer.PURPOSE_BREASTFEEDING,
+                    )
+                    .first()
+                )
+                if purpose:
+                    timer = purpose.timer
+                    created = False
+                else:
+                    timer = models.Timer.objects.create(
+                        child=child,
+                        user=request.user,
+                    )
+                    models.TimerPurpose.objects.create(
+                        timer=timer,
+                        child=child,
+                        purpose=models.Timer.PURPOSE_BREASTFEEDING,
+                    )
+                    created = True
+        except (IntegrityError, ValidationError):
+            timer = models.Timer.objects.get(
+                purpose_record__child=child,
+                purpose_record__purpose=models.Timer.PURPOSE_BREASTFEEDING,
+            )
+            created = False
+
+        if created:
+            messages.success(request, _("Breastfeeding timer started."))
+        else:
+            messages.info(request, _("Breastfeeding timer is already running."))
+        return super().get(request, *args, **kwargs)
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse("dashboard:dashboard-child", kwargs={"slug": kwargs["slug"]})
+
+
+class BreastfeedingFinish(PermissionRequiredMixin, RedirectView):
+    http_method_names = ["post"]
+    permission_required = (
+        "core.view_child",
+        "core.view_timer",
+        "core.add_feeding",
+        "core.delete_timer",
+    )
+    methods = {"left breast", "right breast", "both breasts"}
+
+    def post(self, request, *args, **kwargs):
+        method = request.POST.get("method")
+        if method not in self.methods:
+            messages.error(request, _("Select the breast used to finish feeding."))
+            return super().get(request, *args, **kwargs)
+
+        with transaction.atomic():
+            timer = get_object_or_404(
+                models.Timer.objects.select_for_update(),
+                pk=kwargs["pk"],
+                purpose_record__purpose=models.Timer.PURPOSE_BREASTFEEDING,
+            )
+            self.child_slug = timer.child.slug
+            feeding = models.Feeding(
+                child=timer.child,
+                start=timer.start,
+                end=timezone.now(),
+                type="breast milk",
+                method=method,
+            )
+            try:
+                feeding.full_clean()
+            except ValidationError as error:
+                error_messages = error.message_dict.get("__all__", error.messages)
+                messages.error(
+                    request,
+                    format_html_join(
+                        " ", "{}", ((message,) for message in error_messages)
+                    ),
+                )
+            else:
+                feeding.save()
+                self.feeding_id = feeding.pk
+                timer.delete()
+                messages.success(
+                    request,
+                    format_html(
+                        '{} <a href="{}">{}</a>',
+                        _("Breastfeeding saved."),
+                        reverse("core:feeding-update", args=[feeding.pk]),
+                        _("Edit entry"),
+                    ),
+                )
+        return super().get(request, *args, **kwargs)
+
+    def get_redirect_url(self, *args, **kwargs):
+        timer = (
+            models.Timer.objects.filter(pk=kwargs["pk"]).select_related("child").first()
+        )
+        if timer:
+            return reverse(
+                "dashboard:dashboard-child", kwargs={"slug": timer.child.slug}
+            )
+        if getattr(self, "child_slug", None):
+            return reverse(
+                "dashboard:dashboard-child", kwargs={"slug": self.child_slug}
+            )
+        return reverse("dashboard:dashboard")
+
+
+class BreastfeedingCancel(PermissionRequiredMixin, RedirectView):
+    http_method_names = ["post"]
+    permission_required = ("core.view_child", "core.view_timer", "core.delete_timer")
+
+    def post(self, request, *args, **kwargs):
+        with transaction.atomic():
+            timer = get_object_or_404(
+                models.Timer.objects.select_for_update(),
+                pk=kwargs["pk"],
+                purpose_record__purpose=models.Timer.PURPOSE_BREASTFEEDING,
+            )
+            self.child_slug = timer.child.slug
+            timer.delete()
+        messages.success(request, _("Breastfeeding timer discarded."))
+        return super().get(request, *args, **kwargs)
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse("dashboard:dashboard-child", kwargs={"slug": self.child_slug})
 
 
 class HeadCircumferenceList(
@@ -501,10 +642,16 @@ class TimerList(PermissionRequiredMixin, BabyBuddyPaginatedView, BabyBuddyFilter
     permission_required = ("core.view_timer",)
     filterset_fields = ("user",)
 
+    def get_queryset(self):
+        return super().get_queryset().filter(purpose_record__isnull=True)
+
 
 class TimerDetail(PermissionRequiredMixin, DetailView):
     model = models.Timer
     permission_required = ("core.view_timer",)
+
+    def get_queryset(self):
+        return super().get_queryset().filter(purpose_record__isnull=True)
 
 
 class TimerAdd(PermissionRequiredMixin, CreateView):
@@ -526,6 +673,9 @@ class TimerUpdate(CoreUpdateView):
     permission_required = ("core.change_timer",)
     form_class = forms.TimerForm
     success_url = reverse_lazy("core:timer-list")
+
+    def get_queryset(self):
+        return super().get_queryset().filter(purpose_record__isnull=True)
 
     def get_form_kwargs(self):
         kwargs = super(TimerUpdate, self).get_form_kwargs()
@@ -563,7 +713,9 @@ class TimerRestart(PermissionRequiredMixin, RedirectView):
     permission_required = ("core.change_timer",)
 
     def post(self, request, *args, **kwargs):
-        instance = models.Timer.objects.get(id=kwargs["pk"])
+        instance = get_object_or_404(
+            models.Timer, id=kwargs["pk"], purpose_record__isnull=True
+        )
         instance.restart()
         messages.success(request, "{} restarted.".format(instance))
         return super(TimerRestart, self).get(request, *args, **kwargs)
@@ -576,6 +728,9 @@ class TimerDelete(CoreDeleteView):
     model = models.Timer
     permission_required = ("core.delete_timer",)
     success_url = reverse_lazy("core:timer-list")
+
+    def get_queryset(self):
+        return super().get_queryset().filter(purpose_record__isnull=True)
 
 
 class TummyTimeList(

@@ -12096,6 +12096,14 @@ textarea.form-control-lg {
   color: #343a40;
 }
 
+.breastfeeding-stale {
+  border-color: var(--bs-warning) !important;
+}
+.breastfeeding-stale.alert,
+.breastfeeding-stale .card-header {
+  background-color: rgba(var(--bs-warning-rgb), 0.2);
+}
+
 .card-dashboard .card-body .card-title, .card-dashboard .card-header {
   font-size: 1.5rem;
   font-weight: 500;

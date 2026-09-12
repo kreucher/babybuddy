@@ -41,6 +41,26 @@ def set_initial_values(kwargs, form_type):
     elif models.Child.count() == 1:
         kwargs["initial"].update({"child": models.Child.objects.first()})
 
+    # Preset breastfeeding durations remove date/time arithmetic from the
+    # common late-entry workflow while still presenting the normal form for
+    # review before anything is saved.
+    preset = kwargs.get("preset", None)
+    duration = kwargs.get("duration", None)
+    if form_type == FeedingForm and preset == "breastfeeding":
+        try:
+            duration = int(duration)
+        except (TypeError, ValueError):
+            duration = None
+        if duration in (10, 20, 30):
+            end = timezone.now()
+            kwargs["initial"].update(
+                {
+                    "start": end - timezone.timedelta(minutes=duration),
+                    "end": end,
+                    "type": "breast milk",
+                }
+            )
+
     # Set start and end time based on Timer from `timer` kwarg.
     timer_id = kwargs.get("timer", None)
     if timer_id:
@@ -61,9 +81,14 @@ def set_initial_values(kwargs, form_type):
         )
         if last_feeding:
             last_method = last_feeding.method
-            last_feed_args = {"type": last_feeding.type}
-            if last_method not in ["left breast", "right breast"]:
-                last_feed_args["method"] = last_method
+            last_feed_args = {}
+            if preset == "breastfeeding":
+                if last_method == "both breasts":
+                    last_feed_args["method"] = last_method
+            else:
+                last_feed_args["type"] = last_feeding.type
+                if last_method not in ["left breast", "right breast"]:
+                    last_feed_args["method"] = last_method
             kwargs["initial"].update(last_feed_args)
 
     # Set default "nap" value for Sleep instances.
@@ -80,7 +105,7 @@ def set_initial_values(kwargs, form_type):
         kwargs["initial"].update({"nap": nap})
 
     # Remove custom kwargs, so they do not interfere with `super` calls.
-    for key in ["child", "timer"]:
+    for key in ["child", "timer", "preset", "duration"]:
         try:
             kwargs.pop(key)
         except KeyError:

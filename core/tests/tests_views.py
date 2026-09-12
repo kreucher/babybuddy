@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
-from django.test import TestCase
+from django.http import Http404
+from django.test import RequestFactory, TestCase
 from django.test import Client as HttpClient
 from django.utils import timezone
 
 from faker import Faker
 
 from core import models
+from core.views import BreastfeedingCancel, BreastfeedingFinish
 
 
 class ViewsTestCase(TestCase):
@@ -244,3 +246,153 @@ class ViewsTestCase(TestCase):
         self.assertEqual(page.status_code, 200)
         page = self.c.get("/weight/{}/delete/".format(entry.id))
         self.assertEqual(page.status_code, 200)
+
+
+class BreastfeedingQuickLogViewsTestCase(TestCase):
+    def setUp(self):
+        call_command("migrate", verbosity=0)
+        self.credentials = {"username": "caregiver", "password": "password"}
+        self.user = get_user_model().objects.create_user(
+            is_superuser=True, **self.credentials
+        )
+        self.client.login(**self.credentials)
+        self.child = models.Child.objects.create(
+            first_name="Quick", last_name="Log", birth_date=timezone.localdate()
+        )
+
+    def start_url(self):
+        return "/children/{}/breastfeeding/start/".format(self.child.slug)
+
+    def create_timer(self, start=None, purpose=models.Timer.PURPOSE_BREASTFEEDING):
+        timer = models.Timer.objects.create(
+            child=self.child,
+            start=start or timezone.now() - timezone.timedelta(minutes=20),
+            user=self.user,
+        )
+        if purpose == models.Timer.PURPOSE_BREASTFEEDING:
+            models.TimerPurpose.objects.create(
+                timer=timer, child=self.child, purpose=purpose
+            )
+        return timer
+
+    def test_start_is_post_only_and_idempotent(self):
+        self.assertEqual(self.client.get(self.start_url()).status_code, 405)
+        response = self.client.post(self.start_url(), follow=True)
+        self.assertEqual(response.status_code, 200)
+        timer = models.Timer.objects.get(
+            child=self.child,
+            purpose_record__purpose=models.Timer.PURPOSE_BREASTFEEDING,
+        )
+        self.assertEqual(timer.user, self.user)
+
+        response = self.client.post(self.start_url(), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            models.Timer.objects.filter(
+                child=self.child,
+                purpose_record__purpose=models.Timer.PURPOSE_BREASTFEEDING,
+            ).count(),
+            1,
+        )
+        self.assertContains(response, "already running")
+
+    def test_start_requires_permissions(self):
+        self.client.logout()
+        user = get_user_model().objects.create_user(
+            username="unprivileged", password="password"
+        )
+        self.client.login(username=user.username, password="password")
+        self.assertEqual(self.client.post(self.start_url()).status_code, 403)
+
+    def test_finish_methods_create_normal_feeding_and_delete_timer(self):
+        for method in ("left breast", "right breast", "both breasts"):
+            with self.subTest(method=method):
+                timer = self.create_timer()
+                response = self.client.post(
+                    "/timers/{}/breastfeeding/finish/".format(timer.pk),
+                    {"method": method},
+                    follow=True,
+                )
+                self.assertEqual(response.status_code, 200)
+                feeding = models.Feeding.objects.get()
+                self.assertEqual(feeding.child, self.child)
+                self.assertEqual(feeding.start, timer.start)
+                self.assertEqual(feeding.type, "breast milk")
+                self.assertEqual(feeding.method, method)
+                self.assertGreater(feeding.duration, timezone.timedelta())
+                self.assertFalse(models.Timer.objects.filter(pk=timer.pk).exists())
+                self.assertContains(response, "/feedings/{}/".format(feeding.pk))
+                feeding.delete()
+
+    def test_finish_rejects_invalid_method_without_deleting_timer(self):
+        timer = self.create_timer()
+        response = self.client.post(
+            "/timers/{}/breastfeeding/finish/".format(timer.pk),
+            {"method": "bottle"},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(models.Timer.objects.filter(pk=timer.pk).exists())
+        self.assertFalse(models.Feeding.objects.exists())
+        self.assertContains(response, "Select the breast used")
+
+    def test_finish_rejects_generic_timer(self):
+        timer = self.create_timer(purpose=models.Timer.PURPOSE_GENERIC)
+        request = RequestFactory().post(
+            "/timers/{}/breastfeeding/finish/".format(timer.pk),
+            {"method": "both breasts"},
+        )
+        request.user = self.user
+        with self.assertRaises(Http404):
+            BreastfeedingFinish.as_view()(request, pk=timer.pk)
+        self.assertTrue(models.Timer.objects.filter(pk=timer.pk).exists())
+
+    def test_cancel_is_post_only_and_discards_without_feeding(self):
+        timer = self.create_timer()
+        url = "/timers/{}/breastfeeding/cancel/".format(timer.pk)
+        self.assertEqual(self.client.get(url).status_code, 405)
+        response = self.client.post(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(models.Timer.objects.filter(pk=timer.pk).exists())
+        self.assertFalse(models.Feeding.objects.exists())
+        self.assertContains(response, "timer discarded")
+
+    def test_cancel_rejects_generic_timer(self):
+        timer = self.create_timer(purpose=models.Timer.PURPOSE_GENERIC)
+        request = RequestFactory().post(
+            "/timers/{}/breastfeeding/cancel/".format(timer.pk)
+        )
+        request.user = self.user
+        with self.assertRaises(Http404):
+            BreastfeedingCancel.as_view()(request, pk=timer.pk)
+        self.assertTrue(models.Timer.objects.filter(pk=timer.pk).exists())
+
+    def test_cancel_requires_permissions(self):
+        timer = self.create_timer()
+        self.client.logout()
+        user = get_user_model().objects.create_user(
+            username="cancel-unprivileged", password="password"
+        )
+        self.client.login(username=user.username, password="password")
+        response = self.client.post("/timers/{}/breastfeeding/cancel/".format(timer.pk))
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(models.Timer.objects.filter(pk=timer.pk).exists())
+
+    def test_overlap_keeps_timer_and_links_conflicting_feeding(self):
+        timer = self.create_timer()
+        conflicting = models.Feeding.objects.create(
+            child=self.child,
+            start=timer.start + timezone.timedelta(minutes=5),
+            end=timer.start + timezone.timedelta(minutes=10),
+            type="breast milk",
+            method="left breast",
+        )
+        response = self.client.post(
+            "/timers/{}/breastfeeding/finish/".format(timer.pk),
+            {"method": "both breasts"},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(models.Timer.objects.filter(pk=timer.pk).exists())
+        self.assertEqual(models.Feeding.objects.count(), 1)
+        self.assertContains(response, "/feedings/{}/".format(conflicting.pk))

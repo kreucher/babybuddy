@@ -15,7 +15,7 @@ def timer_nav(context):
     :returns: a dictionary with timers data.
     """
     request = context["request"] or None
-    timers = Timer.objects.filter()
+    timers = Timer.objects.filter(purpose_record__isnull=True)
     children = Child.objects.all()
     perms = context["perms"] or None
     # The 'next' parameter is currently not used.
@@ -32,6 +32,18 @@ def quick_timer_nav(context):
     children = Child.objects.all()
     perms = context["perms"] or None
     return {"children": children, "perms": perms}
+
+
+@register.inclusion_tag("core/breastfeeding_timer_banner.html", takes_context=True)
+def breastfeeding_timer_banner(context):
+    perms = context["perms"]
+    if perms["core"]["view_child"] and perms["core"]["view_timer"]:
+        timers = Timer.objects.filter(
+            purpose_record__purpose=Timer.PURPOSE_BREASTFEEDING
+        ).select_related("child", "user")
+    else:
+        timers = Timer.objects.none()
+    return {"timers": timers, "perms": perms}
 
 
 @register.simple_tag(takes_context=True)

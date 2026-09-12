@@ -6010,6 +6010,9 @@ components:
         duration:
           type: string
           readOnly: true
+        purpose:
+          type: string
+          readOnly: true
         user:
           type: integer
           nullable: true

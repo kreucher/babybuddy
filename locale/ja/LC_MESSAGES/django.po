@@ -2918,6 +2918,89 @@ msgstr "女の子のWHO体重パーセンタイル（kg）"
 #~ msgstr "<b>合計搾乳量</b>"
 
 #~ msgid "Are you sure you want to delete %(number)s inactive timer?"
+#: core/views.py
+msgid "Breastfeeding timer started."
+msgstr "授乳タイマーを開始しました。"
+
+#: core/views.py
+msgid "Breastfeeding timer is already running."
+msgstr "授乳タイマーはすでに動作中です。"
+
+#: core/views.py
+msgid "Select the breast used to finish feeding."
+msgstr "授乳した乳房を選んで終了してください。"
+
+#: core/views.py
+msgid "Breastfeeding saved."
+msgstr "授乳を保存しました。"
+
+#: core/views.py
+msgid "Edit entry"
+msgstr "記録を編集"
+
+#: dashboard/templates/cards/breastfeeding_controls.html
+msgid "Feeding in progress"
+msgstr "授乳中"
+
+#: dashboard/templates/cards/breastfeeding_controls.html
+msgid "Ready"
+msgstr "開始できます"
+
+#: dashboard/templates/cards/breastfeeding_controls.html
+#, python-format
+msgid "Started at %(start)s"
+msgstr "%(start)sに開始"
+
+#: dashboard/templates/cards/breastfeeding_controls.html
+msgid "Finish and save"
+msgstr "終了して保存"
+
+#: dashboard/templates/cards/breastfeeding_controls.html
+msgid "Start breastfeeding"
+msgstr "授乳を開始"
+
+#: dashboard/templates/cards/breastfeeding_controls.html
+msgid "Add a feeding ending now"
+msgstr "今終了した授乳を追加"
+
+#: dashboard/templates/cards/breastfeeding_controls.html
+msgid "min"
+msgstr "分"
+
+#: core/templates/core/breastfeeding_timer_banner.html
+msgid "Breastfeeding in progress"
+msgstr "授乳中"
+
+#: core/templates/core/breastfeeding_timer_banner.html
+msgid "Open controls"
+msgstr "操作画面を開く"
+
+#: core/views.py
+msgid "Breastfeeding timer discarded."
+msgstr "授乳タイマーを破棄しました。"
+
+#: dashboard/templates/cards/breastfeeding_controls.html
+msgid "Discard this breastfeeding timer without saving?"
+msgstr "記録を保存せずに、この授乳タイマーを破棄しますか？"
+
+#: dashboard/templates/cards/breastfeeding_controls.html
+msgid "Discard timer"
+msgstr "タイマーを破棄"
+
+#: core/models.py
+msgid "Purpose child must match timer child."
+msgstr "用途別タイマーの対象児が一致していません。"
+
+#: api/serializers.py
+msgid "The child of a purpose-specific timer cannot be changed."
+msgstr "用途別タイマーの対象児は変更できません。"
+
+#: core/templates/core/breastfeeding_timer_banner.html
+#: dashboard/templates/cards/breastfeeding_controls.html
+msgid "This timer may have been forgotten"
+msgstr "このタイマーは停止し忘れている可能性があります"
+
+#~ msgid "Are you sure you want to delete %(number)s inactive timer?"
 #~ msgid_plural "Are you sure you want to delete %(number)s inactive timers?"
 #~ msgstr[0] "%(number)s個の非アクティブなタイマーを削除してもよろしいですか？"
 
