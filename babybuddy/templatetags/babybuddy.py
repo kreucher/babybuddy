@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from urllib.parse import quote
+
 from django import template
 from django.apps import apps
 from django.conf import settings
+from django.templatetags.static import static
 from django.utils import timezone
 from django.utils.functional import lazy
 from django.utils.html import format_html
@@ -16,6 +19,16 @@ from core.models import Child
 
 register = template.Library()
 mark_safe_lazy = lazy(mark_safe, str)
+
+
+@register.simple_tag()
+def versioned_static(path):
+    """Return a static asset URL with an optional deployment cache key."""
+    url = static(path)
+    version = settings.STATIC_VERSION
+    if not version:
+        return url
+    return "{}?v={}".format(url, quote(version, safe=""))
 
 
 @register.simple_tag

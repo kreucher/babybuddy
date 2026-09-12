@@ -2,7 +2,8 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from django.templatetags.static import static
 from django.utils import timezone
 
 from core.models import Child
@@ -10,6 +11,19 @@ from babybuddy.templatetags import babybuddy
 
 
 class TemplateTagsTestCase(TestCase):
+    def test_versioned_static_without_version(self):
+        self.assertEqual(
+            babybuddy.versioned_static("babybuddy/css/app.css"),
+            static("babybuddy/css/app.css"),
+        )
+
+    @override_settings(STATIC_VERSION="release candidate/1")
+    def test_versioned_static_with_version(self):
+        self.assertEqual(
+            babybuddy.versioned_static("babybuddy/css/app.css"),
+            "{}?v=release%20candidate%2F1".format(static("babybuddy/css/app.css")),
+        )
+
     def test_child_count(self):
         self.assertEqual(babybuddy.get_child_count(), 0)
         Child.objects.create(
