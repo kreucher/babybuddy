@@ -293,12 +293,14 @@ msgstr ""
 
 #: babybuddy/templates/babybuddy/nav-dropdown.html:48 core/models.py:282
 #: core/models.py:286
+#: dashboard/templates/cards/diaperchange_last.html:4
 msgid "Diaper Change"
 msgstr "おむつ交換"
 
 #: babybuddy/templates/babybuddy/nav-dropdown.html:54
 #: babybuddy/templates/babybuddy/nav-dropdown.html:263 core/models.py:355
 #: core/models.py:359 core/templates/core/timer_detail.html:31
+#: dashboard/templates/cards/feeding_last.html:4
 msgid "Feeding"
 msgstr "授乳"
 
@@ -315,8 +317,9 @@ msgstr "ボトルフィーディング"
 #: core/templates/core/medication_list.html:4
 #: core/templates/core/medication_list.html:7
 #: core/templates/core/medication_list.html:11
+#: dashboard/templates/cards/medication_last.html:4
 msgid "Medication"
-msgstr "投薬記録を追加"
+msgstr "投薬"
 
 #: babybuddy/templates/babybuddy/nav-dropdown.html:70
 #: babybuddy/templates/babybuddy/nav-dropdown.html:288 core/models.py:519
@@ -327,6 +330,7 @@ msgstr "投薬記録を追加"
 #: core/templates/core/pumping_list.html:7
 #: core/templates/core/pumping_list.html:11
 #: core/templates/core/timer_detail.html:38
+#: dashboard/templates/cards/pumping_last.html:4
 #: reports/templates/reports/pumping_amounts.html:4
 #: reports/templates/reports/pumping_amounts.html:9
 msgid "Pumping"
@@ -346,6 +350,7 @@ msgstr "育児ノート"
 #: core/templates/core/sleep_form.html:12 core/templates/core/sleep_list.html:4
 #: core/templates/core/sleep_list.html:7 core/templates/core/sleep_list.html:11
 #: core/templates/core/timer_detail.html:45
+#: dashboard/templates/cards/sleep_last.html:4
 msgid "Sleep"
 msgstr "睡眠"
 
@@ -359,6 +364,7 @@ msgstr "睡眠"
 #: core/templates/core/tummytime_list.html:4
 #: core/templates/core/tummytime_list.html:7
 #: core/templates/core/tummytime_list.html:11
+#: dashboard/templates/cards/tummytime_last.html:4
 msgid "Tummy Time"
 msgstr "うつぶせ遊び"
 
@@ -2116,6 +2122,7 @@ msgid "%(model)s reading for %(child)s updated."
 msgstr "%(child)sの%(model)sの測定が更新されました。"
 
 #: dashboard/templates/cards/breastfeeding.html:4
+#: dashboard/templates/cards/breastfeeding_controls.html:4
 msgid "Breastfeeding"
 msgstr "母乳"
 
@@ -2136,9 +2143,8 @@ msgstr "右"
 msgid "feedings in"
 msgstr "授乳の時間"
 
-#: dashboard/templates/cards/diaperchange_last.html:4
-msgid "Last Diaper Change"
-msgstr "前回のおむつ交換"
+#~ msgid "Last Diaper Change"
+#~ msgstr "前回のおむつ交換"
 
 #: dashboard/templates/cards/diaperchange_types.html:20
 msgid "wet"
@@ -2152,13 +2158,12 @@ msgstr "うんち"
 msgid "changes"
 msgstr "おむつ交換"
 
-#: dashboard/templates/cards/feeding_last.html:4
-msgid "Last Feeding"
-msgstr "最近の授乳"
+#~ msgid "Last Feeding"
+#~ msgstr "最近の授乳"
 
 #: dashboard/templates/cards/feeding_last_method.html:4
-msgid "Last Feeding Method"
-msgstr "最近の授乳方式"
+msgid "Feeding Method"
+msgstr "授乳方式"
 
 #: dashboard/templates/cards/feeding_last_method.html:17
 msgid "most recent"
@@ -2180,9 +2185,8 @@ msgid "%(counter)s feeding"
 msgid_plural "%(counter)s feedings"
 msgstr[0] "%(counter)s 回の授乳"
 
-#: dashboard/templates/cards/medication_last.html:4
-msgid "Last Medication"
-msgstr "最近の投薬"
+#~ msgid "Last Medication"
+#~ msgstr "最近の投薬"
 
 #: dashboard/templates/cards/medication_last.html:27
 msgid "Next dose ready"
@@ -2193,9 +2197,8 @@ msgstr "次の投与準備完了"
 msgid "Next dose at %(next_time)s"
 msgstr "次回の投薬は %(next_time)s"
 
-#: dashboard/templates/cards/pumping_last.html:4
-msgid "Last Pumping"
-msgstr "最後の搾乳"
+#~ msgid "Last Pumping"
+#~ msgstr "最後の搾乳"
 
 #: dashboard/templates/cards/pumping_recent.html:4
 msgid "Recent Pumpings"
@@ -2207,9 +2210,8 @@ msgid "%(counter)s pumping"
 msgid_plural "%(counter)s pumpings"
 msgstr[0] "%(counter)s 回の搾乳"
 
-#: dashboard/templates/cards/sleep_last.html:4
-msgid "Last Sleep"
-msgstr "前回の睡眠"
+#~ msgid "Last Sleep"
+#~ msgstr "前回の睡眠"
 
 #: dashboard/templates/cards/sleep_naps_day.html:4
 msgid "Today's Naps"
@@ -2263,9 +2265,8 @@ msgstr "今日のうつぶせ遊び"
 msgid "%(duration)s at %(end)s"
 msgstr "%(end)sに%(duration)s"
 
-#: dashboard/templates/cards/tummytime_last.html:4
-msgid "Last Tummy Time"
-msgstr "前回のうつぶせ遊び"
+#~ msgid "Last Tummy Time"
+#~ msgstr "前回のうつぶせ遊び"
 
 #: dashboard/templates/cards/tummytime_last.html:15
 msgid "Never"
@@ -2938,13 +2939,11 @@ msgstr "授乳を保存しました。"
 msgid "Edit entry"
 msgstr "記録を編集"
 
-#: dashboard/templates/cards/breastfeeding_controls.html
-msgid "Feeding in progress"
-msgstr "授乳中"
+#~ msgid "Feeding in progress"
+#~ msgstr "授乳中"
 
-#: dashboard/templates/cards/breastfeeding_controls.html
-msgid "Ready"
-msgstr "開始できます"
+#~ msgid "Ready"
+#~ msgstr "開始できます"
 
 #: dashboard/templates/cards/breastfeeding_controls.html
 #, python-format
@@ -3000,9 +2999,8 @@ msgstr "用途別タイマーの対象児は変更できません。"
 msgid "This timer may have been forgotten"
 msgstr "このタイマーは停止し忘れている可能性があります"
 
-#: dashboard/templates/cards/breastfeeding_controls.html
-msgid "Last breastfeeding"
-msgstr "最後の授乳"
+#~ msgid "Last breastfeeding"
+#~ msgstr "最後の授乳"
 
 #: dashboard/templates/cards/feeding_last.html
 msgid "Formula bottle"

@@ -4,13 +4,29 @@
     {% trans "Breastfeeding" %}
 {% endblock %}
 {% block title %}
-    {% if timer %}
-        {% trans "Feeding in progress" %}
+    {% if last_breastfeeding %}
+        <div>
+            {% blocktrans trimmed with time_ago=last_breastfeeding.end|deltasince|duration_string:'m' %}
+                {{ time_ago }} ago
+            {% endblocktrans %}
+        </div>
+        <small>{{ last_breastfeeding.start|time }}
+            {% if last_breastfeeding.end != last_breastfeeding.start %}– {{ last_breastfeeding.end|time }}{% endif %}
+        </small>
     {% else %}
-        {% trans "Ready" %}
+        {% trans "None" %}
     {% endif %}
 {% endblock %}
 {% block content %}
+    {% if last_breastfeeding %}
+        <div class="mb-3">
+            {% if perms.core.change_feeding %}
+                <a href="{% url 'core:feeding-update' last_breastfeeding.pk %}">{{ last_breastfeeding.get_method_display }}</a>
+            {% else %}
+                {{ last_breastfeeding.get_method_display }}
+            {% endif %}
+        </div>
+    {% endif %}
     {% if timer %}
         <p class="breastfeeding-elapsed fs-3 mb-3"
            data-breastfeeding-start="{{ timer.start|date:'c' }}"
@@ -71,27 +87,4 @@
             </div>
         {% endif %}
     {% endif %}
-    <div class="small text-body-secondary mt-3">
-        <strong>{% trans "Last breastfeeding" %}</strong>
-        {% if last_breastfeeding %}
-            <div>
-                {% blocktrans trimmed with time_ago=last_breastfeeding.end|deltasince|duration_string:'m' %}
-                    {{ time_ago }} ago
-                {% endblocktrans %}
-            </div>
-            <div>
-                {{ last_breastfeeding.start|time }}
-                {% if last_breastfeeding.end != last_breastfeeding.start %}– {{ last_breastfeeding.end|time }}{% endif %}
-            </div>
-            <div>
-                {% if perms.core.change_feeding %}
-                    <a href="{% url 'core:feeding-update' last_breastfeeding.pk %}">{{ last_breastfeeding.get_method_display }}</a>
-                {% else %}
-                    {{ last_breastfeeding.get_method_display }}
-                {% endif %}
-            </div>
-        {% else %}
-            {% trans "None" %}
-        {% endif %}
-    </div>
 {% endblock %}

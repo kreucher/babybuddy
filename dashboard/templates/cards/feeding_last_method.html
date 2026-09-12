@@ -1,7 +1,7 @@
-{% extends 'cards/base.html' %}
+{% extends "cards/base.html" %}
 {% load i18n %}
 {% block header %}
-    <a href="{% url "core:feeding-list" %}">{% trans "Last Feeding Method" %}</a>
+    <a href="{% url "core:feeding-list" %}">{% trans "Feeding Method" %}</a>
 {% endblock %}
 {% block title %}
     {% if feedings|length > 0 %}

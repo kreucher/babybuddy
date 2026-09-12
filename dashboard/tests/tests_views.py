@@ -3,10 +3,11 @@ from django.test import TestCase
 from django.test import Client as HttpClient
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.utils import timezone
 
 from faker import Faker
 
-from core.models import Child, Timer, TimerPurpose
+from core.models import Child, Feeding, Timer, TimerPurpose
 
 
 class ViewsTestCase(TestCase):
@@ -35,6 +36,13 @@ class ViewsTestCase(TestCase):
 
         call_command("fake", verbosity=0, children=1, days=1)
         child = Child.objects.first()
+        breastfeeding = Feeding.objects.create(
+            child=child,
+            start=timezone.now() - timezone.timedelta(minutes=15),
+            end=timezone.now(),
+            type="breast milk",
+            method="both breasts",
+        )
         page = self.c.get("/dashboard/")
         self.assertEqual(page.url, "/children/{}/dashboard/".format(child.slug))
 
@@ -46,13 +54,28 @@ class ViewsTestCase(TestCase):
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, "Start breastfeeding")
         self.assertNotContains(page, "Finish and save")
-        self.assertContains(page, "Last breastfeeding")
+        self.assertContains(page, "Breastfeeding")
+        self.assertContains(page, "/feedings/{}/".format(breastfeeding.pk))
+        self.assertNotContains(page, "Last breastfeeding")
+        for old_header in (
+            "Last Feeding",
+            "Last Diaper Change",
+            "Last Pumping",
+            "Last Sleep",
+            "Last Medication",
+            "Last Feeding Method",
+            "Last Tummy Time",
+        ):
+            self.assertNotContains(page, old_header)
         self.assertContains(page, "Formula bottle")
-        self.assertContains(page, 'value="30"')
+        for amount in (30, 40, 50, 60):
+            self.assertContains(page, 'name="amount" value="{}"'.format(amount))
         self.assertContains(page, "Quick log")
-        self.assertContains(page, 'value="wet"')
+        for kind in ("wet", "solid_yellow", "solid_brown"):
+            self.assertContains(page, 'name="kind" value="{}"'.format(kind))
         self.assertContains(page, "Add ending now")
-        self.assertContains(page, 'value="5"')
+        for duration in (5, 10, 15):
+            self.assertContains(page, 'name="duration" value="{}"'.format(duration))
 
         timer = Timer.objects.create(
             child=child,
