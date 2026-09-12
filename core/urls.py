@@ -46,6 +46,21 @@ urlpatterns = [
     path("feedings/", views.FeedingList.as_view(), name="feeding-list"),
     path("feedings/add/", views.FeedingAdd.as_view(), name="feeding-add"),
     path(
+        "children/<str:slug>/quick/formula-bottle/",
+        views.FormulaBottleQuickLog.as_view(),
+        name="formula-bottle-quick-log",
+    ),
+    path(
+        "children/<str:slug>/quick/diaper-change/",
+        views.DiaperChangeQuickLog.as_view(),
+        name="diaper-change-quick-log",
+    ),
+    path(
+        "children/<str:slug>/quick/tummy-time/",
+        views.TummyTimeQuickLog.as_view(),
+        name="tummy-time-quick-log",
+    ),
+    path(
         "children/<str:slug>/breastfeeding/start/",
         views.BreastfeedingStart.as_view(),
         name="breastfeeding-start",

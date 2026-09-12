@@ -1,4 +1,4 @@
-{% extends 'cards/base.html' %}
+{% extends "cards/base.html" %}
 {% load duration i18n %}
 {% block header %}
     <a href="{% url "core:diaperchange-list" %}">{% trans "Last Diaper Change" %}</a>
@@ -17,4 +17,25 @@
 {% endblock %}
 {% block content %}
     {% if change %}{{ change.attributes|join:', ' }}{% endif %}
+    {% if perms.core.add_diaperchange %}
+        <p class="small text-body-secondary mt-3 mb-2">{% trans "Quick log" %}</p>
+        <form method="post"
+              action="{% url 'core:diaper-change-quick-log' child.slug %}">
+            {% csrf_token %}
+            <div class="btn-group w-100" role="group">
+                <button class="btn btn-outline-primary btn-sm"
+                        type="submit"
+                        name="kind"
+                        value="wet">{% trans "Wet" %}</button>
+                <button class="btn btn-outline-warning btn-sm"
+                        type="submit"
+                        name="kind"
+                        value="solid_yellow">{% trans "Solid yellow" %}</button>
+                <button class="btn btn-outline-secondary btn-sm"
+                        type="submit"
+                        name="kind"
+                        value="solid_brown">{% trans "Solid brown" %}</button>
+            </div>
+        </form>
+    {% endif %}
 {% endblock %}

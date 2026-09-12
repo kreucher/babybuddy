@@ -46,6 +46,13 @@ class ViewsTestCase(TestCase):
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, "Start breastfeeding")
         self.assertNotContains(page, "Finish and save")
+        self.assertContains(page, "Last breastfeeding")
+        self.assertContains(page, "Formula bottle")
+        self.assertContains(page, 'value="30"')
+        self.assertContains(page, "Quick log")
+        self.assertContains(page, 'value="wet"')
+        self.assertContains(page, "Add ending now")
+        self.assertContains(page, 'value="5"')
 
         timer = Timer.objects.create(
             child=child,

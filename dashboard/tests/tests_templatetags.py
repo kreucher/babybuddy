@@ -437,3 +437,69 @@ class TemplateTagsTestCase(TestCase):
         self.assertIsInstance(data["last"], models.TummyTime)
         stats = {"count": 3, "total": timezone.timedelta(0, 300)}
         self.assertEqual(data["stats"], stats)
+
+    def test_card_tummytime_day_passes_child_and_perms(self):
+        data = cards.card_tummytime_day(self.context, self.child, self.date)
+        self.assertEqual(data["child"], self.child)
+        self.assertIn("perms", data)
+
+    def test_card_diaperchange_last_passes_child_and_perms(self):
+        data = cards.card_diaperchange_last(self.context, self.child)
+        self.assertEqual(data["child"], self.child)
+        self.assertIn("perms", data)
+
+    def test_card_breastfeeding_controls_last_breastfeeding_excludes_bottle(self):
+        user = get_user_model().objects.first()
+        context = {**self.context, "perms": PermWrapper(user)}
+
+        bottle = models.Feeding.objects.create(
+            child=self.child,
+            start=timezone.now() - timezone.timedelta(minutes=5),
+            end=timezone.now() - timezone.timedelta(minutes=1),
+            type="formula",
+            method="bottle",
+            amount=60,
+        )
+        breast = models.Feeding.objects.create(
+            child=self.child,
+            start=timezone.now() - timezone.timedelta(hours=2),
+            end=timezone.now() - timezone.timedelta(hours=1, minutes=45),
+            type="breast milk",
+            method="both breasts",
+        )
+        invalid_formula_breast = models.Feeding.objects.create(
+            child=self.child,
+            start=timezone.now() - timezone.timedelta(minutes=4),
+            end=timezone.now() - timezone.timedelta(minutes=2),
+            type="formula",
+            method="both breasts",
+        )
+
+        data = cards.card_breastfeeding_controls(context, self.child)
+        self.assertEqual(data["last_breastfeeding"], breast)
+        self.assertNotEqual(data["last_breastfeeding"], bottle)
+        self.assertNotEqual(data["last_breastfeeding"], invalid_formula_breast)
+
+        bottle.delete()
+        breast.delete()
+        invalid_formula_breast.delete()
+
+    def test_card_breastfeeding_controls_last_breastfeeding_none_when_empty(self):
+        user = get_user_model().objects.first()
+        context = {**self.context, "perms": PermWrapper(user)}
+        child = models.Child.objects.create(
+            first_name="No", last_name="Feedings", birth_date=timezone.localdate()
+        )
+        data = cards.card_breastfeeding_controls(context, child)
+        self.assertIsNone(data["last_breastfeeding"])
+
+    def test_quick_log_cards_are_not_hidden_when_history_is_empty(self):
+        user = get_user_model().objects.first()
+        context = {**self.context, "perms": PermWrapper(user)}
+        child = models.Child.objects.create(
+            first_name="No", last_name="History", birth_date=timezone.localdate()
+        )
+
+        self.assertFalse(cards.card_feeding_last(context, child)["empty"])
+        self.assertFalse(cards.card_diaperchange_last(context, child)["empty"])
+        self.assertFalse(cards.card_tummytime_day(context, child)["empty"])

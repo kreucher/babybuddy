@@ -396,3 +396,179 @@ class BreastfeedingQuickLogViewsTestCase(TestCase):
         self.assertTrue(models.Timer.objects.filter(pk=timer.pk).exists())
         self.assertEqual(models.Feeding.objects.count(), 1)
         self.assertContains(response, "/feedings/{}/".format(conflicting.pk))
+
+
+class FormulaBottleQuickLogTestCase(TestCase):
+    def setUp(self):
+        call_command("migrate", verbosity=0)
+        self.credentials = {"username": "formula-caregiver", "password": "password"}
+        self.user = get_user_model().objects.create_user(
+            is_superuser=True, **self.credentials
+        )
+        self.client.login(**self.credentials)
+        self.child = models.Child.objects.create(
+            first_name="Formula", last_name="Baby", birth_date=timezone.localdate()
+        )
+
+    def url(self):
+        return "/children/{}/quick/formula-bottle/".format(self.child.slug)
+
+    def test_get_returns_405(self):
+        self.assertEqual(self.client.get(self.url()).status_code, 405)
+
+    def test_valid_amounts_create_feeding_and_redirect(self):
+        for amount in [30, 40, 50, 60]:
+            with self.subTest(amount=amount):
+                response = self.client.post(self.url(), {"amount": amount}, follow=True)
+                self.assertEqual(response.status_code, 200)
+                feeding = models.Feeding.objects.filter(
+                    child=self.child, type="formula", method="bottle", amount=amount
+                ).last()
+                self.assertIsNotNone(feeding)
+                self.assertContains(response, "Formula bottle saved")
+                self.assertContains(response, "/feedings/{}/".format(feeding.pk))
+                feeding.delete()
+
+    def test_invalid_amount_creates_nothing(self):
+        for bad in ["", "0", "25", "abc", "31"]:
+            with self.subTest(amount=bad):
+                count_before = models.Feeding.objects.count()
+                response = self.client.post(self.url(), {"amount": bad}, follow=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(models.Feeding.objects.count(), count_before)
+
+    def test_requires_permission(self):
+        self.client.logout()
+        unprivileged = get_user_model().objects.create_user(
+            username="formula-unpriv", password="password"
+        )
+        self.client.login(username="formula-unpriv", password="password")
+        response = self.client.post(self.url(), {"amount": 30})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(models.Feeding.objects.count(), 0)
+
+    def test_formula_feeding_fields(self):
+        self.client.post(self.url(), {"amount": 50}, follow=True)
+        feeding = models.Feeding.objects.get(child=self.child)
+        self.assertEqual(feeding.type, "formula")
+        self.assertEqual(feeding.method, "bottle")
+        self.assertEqual(feeding.amount, 50)
+
+
+class DiaperChangeQuickLogTestCase(TestCase):
+    def setUp(self):
+        call_command("migrate", verbosity=0)
+        self.credentials = {"username": "diaper-caregiver", "password": "password"}
+        self.user = get_user_model().objects.create_user(
+            is_superuser=True, **self.credentials
+        )
+        self.client.login(**self.credentials)
+        self.child = models.Child.objects.create(
+            first_name="Diaper", last_name="Baby", birth_date=timezone.localdate()
+        )
+
+    def url(self):
+        return "/children/{}/quick/diaper-change/".format(self.child.slug)
+
+    def test_get_returns_405(self):
+        self.assertEqual(self.client.get(self.url()).status_code, 405)
+
+    def test_wet_creates_correct_change(self):
+        response = self.client.post(self.url(), {"kind": "wet"}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        change = models.DiaperChange.objects.get(child=self.child)
+        self.assertTrue(change.wet)
+        self.assertFalse(change.solid)
+        self.assertEqual(change.color, "")
+        self.assertContains(response, "Diaper change saved")
+
+    def test_solid_yellow_creates_correct_change(self):
+        response = self.client.post(self.url(), {"kind": "solid_yellow"}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        change = models.DiaperChange.objects.get(child=self.child)
+        self.assertFalse(change.wet)
+        self.assertTrue(change.solid)
+        self.assertEqual(change.color, "yellow")
+
+    def test_solid_brown_creates_correct_change(self):
+        response = self.client.post(self.url(), {"kind": "solid_brown"}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        change = models.DiaperChange.objects.get(child=self.child)
+        self.assertFalse(change.wet)
+        self.assertTrue(change.solid)
+        self.assertEqual(change.color, "brown")
+
+    def test_invalid_kind_creates_nothing(self):
+        for bad in ["", "yellow", "dry", "both"]:
+            with self.subTest(kind=bad):
+                count_before = models.DiaperChange.objects.count()
+                response = self.client.post(self.url(), {"kind": bad}, follow=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(models.DiaperChange.objects.count(), count_before)
+
+    def test_requires_permission(self):
+        self.client.logout()
+        get_user_model().objects.create_user(
+            username="diaper-unpriv", password="password"
+        )
+        self.client.login(username="diaper-unpriv", password="password")
+        response = self.client.post(self.url(), {"kind": "wet"})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(models.DiaperChange.objects.count(), 0)
+
+
+class TummyTimeQuickLogTestCase(TestCase):
+    def setUp(self):
+        call_command("migrate", verbosity=0)
+        self.credentials = {"username": "tummy-caregiver", "password": "password"}
+        self.user = get_user_model().objects.create_user(
+            is_superuser=True, **self.credentials
+        )
+        self.client.login(**self.credentials)
+        self.child = models.Child.objects.create(
+            first_name="Tummy", last_name="Baby", birth_date=timezone.localdate()
+        )
+
+    def url(self):
+        return "/children/{}/quick/tummy-time/".format(self.child.slug)
+
+    def test_get_returns_405(self):
+        self.assertEqual(self.client.get(self.url()).status_code, 405)
+
+    def test_valid_durations_create_tummytime(self):
+        for minutes in [5, 10, 15]:
+            with self.subTest(minutes=minutes):
+                response = self.client.post(
+                    self.url(), {"duration": minutes}, follow=True
+                )
+                self.assertEqual(response.status_code, 200)
+                tt = models.TummyTime.objects.filter(child=self.child).last()
+                self.assertIsNotNone(tt)
+                self.assertAlmostEqual(tt.duration.seconds, minutes * 60, delta=5)
+                self.assertContains(response, "Tummy time saved")
+                self.assertContains(response, "/tummy-time/{}/".format(tt.pk))
+                tt.delete()
+
+    def test_invalid_duration_creates_nothing(self):
+        for bad in ["", "0", "3", "20", "abc"]:
+            with self.subTest(duration=bad):
+                count_before = models.TummyTime.objects.count()
+                response = self.client.post(self.url(), {"duration": bad}, follow=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(models.TummyTime.objects.count(), count_before)
+
+    def test_requires_permission(self):
+        self.client.logout()
+        get_user_model().objects.create_user(
+            username="tummy-unpriv", password="password"
+        )
+        self.client.login(username="tummy-unpriv", password="password")
+        response = self.client.post(self.url(), {"duration": 5})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(models.TummyTime.objects.count(), 0)
+
+    def test_start_end_relationship(self):
+        self.client.post(self.url(), {"duration": 10}, follow=True)
+        tt = models.TummyTime.objects.get(child=self.child)
+        delta = tt.end - tt.start
+        self.assertAlmostEqual(delta.seconds, 600, delta=5)

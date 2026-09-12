@@ -3000,6 +3000,54 @@ msgstr "用途別タイマーの対象児は変更できません。"
 msgid "This timer may have been forgotten"
 msgstr "このタイマーは停止し忘れている可能性があります"
 
+#: dashboard/templates/cards/breastfeeding_controls.html
+msgid "Last breastfeeding"
+msgstr "最後の授乳"
+
+#: dashboard/templates/cards/feeding_last.html
+msgid "Formula bottle"
+msgstr "粉ミルク（哺乳瓶）"
+
+#: core/views.py
+msgid "Formula bottle saved."
+msgstr "粉ミルク（哺乳瓶）を保存しました。"
+
+#: core/views.py
+msgid "Invalid amount."
+msgstr "無効な量です。"
+
+#: dashboard/templates/cards/diaperchange_last.html
+msgid "Quick log"
+msgstr "クイックログ"
+
+#: dashboard/templates/cards/diaperchange_last.html
+msgid "Solid yellow"
+msgstr "黄色うんち"
+
+#: dashboard/templates/cards/diaperchange_last.html
+msgid "Solid brown"
+msgstr "茶色うんち"
+
+#: core/views.py
+msgid "Diaper change saved."
+msgstr "おむつ交換を保存しました。"
+
+#: core/views.py
+msgid "Invalid diaper change type."
+msgstr "無効なおむつ交換タイプです。"
+
+#: dashboard/templates/cards/tummytime_day.html
+msgid "Add ending now"
+msgstr "終了時刻を今にして追加"
+
+#: core/views.py
+msgid "Tummy time saved."
+msgstr "うつ伏せ時間を保存しました。"
+
+#: core/views.py
+msgid "Invalid duration."
+msgstr "無効な時間です。"
+
 #~ msgid "Are you sure you want to delete %(number)s inactive timer?"
 #~ msgid_plural "Are you sure you want to delete %(number)s inactive timers?"
 #~ msgstr[0] "%(number)s個の非アクティブなタイマーを削除してもよろしいですか？"

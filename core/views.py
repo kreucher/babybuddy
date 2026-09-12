@@ -353,6 +353,148 @@ class BreastfeedingCancel(PermissionRequiredMixin, RedirectView):
         return reverse("dashboard:dashboard-child", kwargs={"slug": self.child_slug})
 
 
+class FormulaBottleQuickLog(PermissionRequiredMixin, RedirectView):
+    http_method_names = ["post"]
+    permission_required = ("core.view_child", "core.add_feeding")
+    allowed_amounts = {30, 40, 50, 60}
+
+    def post(self, request, *args, **kwargs):
+        child = get_object_or_404(models.Child, slug=kwargs["slug"])
+        try:
+            amount = int(request.POST.get("amount", ""))
+        except (ValueError, TypeError):
+            amount = None
+        if amount not in self.allowed_amounts:
+            messages.error(request, _("Invalid amount."))
+            return super().get(request, *args, **kwargs)
+        now = timezone.now()
+        feeding = models.Feeding(
+            child=child,
+            start=now,
+            end=now,
+            type="formula",
+            method="bottle",
+            amount=amount,
+        )
+        try:
+            feeding.full_clean()
+        except ValidationError as error:
+            error_messages = error.message_dict.get("__all__", error.messages)
+            messages.error(
+                request,
+                format_html_join(" ", "{}", ((message,) for message in error_messages)),
+            )
+        else:
+            feeding.save()
+            messages.success(
+                request,
+                format_html(
+                    '{} <a href="{}">{}</a>',
+                    _("Formula bottle saved."),
+                    reverse("core:feeding-update", args=[feeding.pk]),
+                    _("Edit entry"),
+                ),
+            )
+        return super().get(request, *args, **kwargs)
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse("dashboard:dashboard-child", kwargs={"slug": kwargs["slug"]})
+
+
+class DiaperChangeQuickLog(PermissionRequiredMixin, RedirectView):
+    http_method_names = ["post"]
+    permission_required = ("core.view_child", "core.add_diaperchange")
+    allowed_kinds = {
+        "wet": {"wet": True, "solid": False, "color": ""},
+        "solid_yellow": {"wet": False, "solid": True, "color": "yellow"},
+        "solid_brown": {"wet": False, "solid": True, "color": "brown"},
+    }
+
+    def post(self, request, *args, **kwargs):
+        child = get_object_or_404(models.Child, slug=kwargs["slug"])
+        kind = request.POST.get("kind", "")
+        if kind not in self.allowed_kinds:
+            messages.error(request, _("Invalid diaper change type."))
+            return super().get(request, *args, **kwargs)
+        attrs = self.allowed_kinds[kind]
+        change = models.DiaperChange(
+            child=child,
+            time=timezone.now(),
+            wet=attrs["wet"],
+            solid=attrs["solid"],
+            color=attrs["color"],
+        )
+        try:
+            change.full_clean()
+        except ValidationError as error:
+            error_messages = error.message_dict.get("__all__", error.messages)
+            messages.error(
+                request,
+                format_html_join(" ", "{}", ((message,) for message in error_messages)),
+            )
+        else:
+            change.save()
+            messages.success(
+                request,
+                format_html(
+                    '{} <a href="{}">{}</a>',
+                    _("Diaper change saved."),
+                    reverse("core:diaperchange-update", args=[change.pk]),
+                    _("Edit entry"),
+                ),
+            )
+        return super().get(request, *args, **kwargs)
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse("dashboard:dashboard-child", kwargs={"slug": kwargs["slug"]})
+
+
+class TummyTimeQuickLog(PermissionRequiredMixin, RedirectView):
+    http_method_names = ["post"]
+    permission_required = ("core.view_child", "core.add_tummytime")
+    allowed_durations = {5, 10, 15}
+
+    def post(self, request, *args, **kwargs):
+        child = get_object_or_404(models.Child, slug=kwargs["slug"])
+        try:
+            duration_min = int(request.POST.get("duration", ""))
+        except (ValueError, TypeError):
+            duration_min = None
+        if duration_min not in self.allowed_durations:
+            messages.error(request, _("Invalid duration."))
+            return super().get(request, *args, **kwargs)
+        end = timezone.now()
+        start = end - timezone.timedelta(minutes=duration_min)
+        tummytime = models.TummyTime(
+            child=child,
+            start=start,
+            end=end,
+        )
+        try:
+            tummytime.full_clean()
+        except ValidationError as error:
+            error_messages = error.message_dict.get("__all__", error.messages)
+            messages.error(
+                request,
+                format_html_join(" ", "{}", ((message,) for message in error_messages)),
+            )
+        else:
+            tummytime.save()
+            messages.success(
+                request,
+                format_html(
+                    '{} <a href="{}">{}</a>',
+                    _("Tummy time saved."),
+                    reverse("core:tummytime-update", args=[tummytime.pk]),
+                    _("Edit entry"),
+                ),
+            )
+        return super().get(request, *args, **kwargs)
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse("dashboard:dashboard-child", kwargs={"slug": kwargs["slug"]})
+
+
 class HeadCircumferenceList(
     PermissionRequiredMixin, BabyBuddyPaginatedView, BabyBuddyFilterView
 ):

@@ -1,4 +1,4 @@
-{% extends 'cards/base.html' %}
+{% extends "cards/base.html" %}
 {% load duration i18n %}
 {% block header %}
     <a href="{% url "core:tummytime-list" %}">{% trans "Today's Tummy Time" %}</a>
@@ -19,5 +19,28 @@
                 {% endblocktrans %}
             </li>
         {% endfor %}
+        {% if perms.core.add_tummytime %}
+            <li class="list-group-item">
+                <p class="small text-body-secondary mb-2">{% trans "Add ending now" %}</p>
+                <form method="post"
+                      action="{% url 'core:tummy-time-quick-log' child.slug %}">
+                    {% csrf_token %}
+                    <div class="btn-group w-100" role="group">
+                        <button class="btn btn-outline-primary btn-sm"
+                                type="submit"
+                                name="duration"
+                                value="5">5 {% trans "min" %}</button>
+                        <button class="btn btn-outline-primary btn-sm"
+                                type="submit"
+                                name="duration"
+                                value="10">10 {% trans "min" %}</button>
+                        <button class="btn btn-outline-primary btn-sm"
+                                type="submit"
+                                name="duration"
+                                value="15">15 {% trans "min" %}</button>
+                    </div>
+                </form>
+            </li>
+        {% endif %}
     </ul>
 {% endblock %}

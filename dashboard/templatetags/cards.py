@@ -39,13 +39,17 @@ def card_diaperchange_last(context, child):
         .order_by("-time")
         .first()
     )
-    empty = not instance
+    perms = context.get("perms")
+    can_quick_log = bool(perms and perms["core"]["add_diaperchange"])
+    empty = not instance and not can_quick_log
 
     return {
         "type": "diaperchange",
         "change": instance,
+        "child": child,
         "empty": empty,
         "hide_empty": _hide_empty(context),
+        "perms": perms,
     }
 
 
@@ -129,7 +133,7 @@ def card_breastfeeding(context, child, date=None):
     )
 
     instances = (
-        models.Feeding.objects.filter(child=child)
+        models.Feeding.objects.filter(child=child, type="breast milk")
         .filter(start__gt=min_date)
         .filter(start__lt=max_date)
         .filter(method__in=("left breast", "right breast", "both breasts"))
@@ -192,10 +196,18 @@ def card_breastfeeding_controls(context, child):
         )
     else:
         timer = None
+    last_breastfeeding = (
+        models.Feeding.objects.filter(child=child, type="breast milk")
+        .filter(method__in=("left breast", "right breast", "both breasts"))
+        .filter(**_filter_data_age(context))
+        .order_by("-end")
+        .first()
+    )
     return {
         "type": "feeding",
         "child": child,
         "timer": timer,
+        "last_breastfeeding": last_breastfeeding,
         "empty": False,
         "hide_empty": False,
         "perms": perms,
@@ -260,14 +272,18 @@ def card_feeding_last(context, child):
         .order_by("-end")
         .first()
     )
-    empty = not instance
+    perms = context.get("perms")
+    can_quick_log = bool(perms and perms["core"]["add_feeding"])
+    empty = not instance and not can_quick_log
 
     return {
         "type": "feeding",
+        "child": child,
         "feeding": instance,
         "feeding_diff_base": feeding_time_diff_base(context, instance),
         "empty": empty,
         "hide_empty": _hide_empty(context),
+        "perms": perms,
     }
 
 
@@ -898,7 +914,9 @@ def card_tummytime_day(context, child, date=None):
     instances = models.TummyTime.objects.filter(
         child=child, end__year=date.year, end__month=date.month, end__day=date.day
     ).order_by("-end")
-    empty = len(instances) == 0
+    perms = context.get("perms")
+    can_quick_log = bool(perms and perms["core"]["add_tummytime"])
+    empty = len(instances) == 0 and not can_quick_log
 
     stats = {"total": timezone.timedelta(seconds=0), "count": instances.count()}
     for instance in instances:
@@ -911,6 +929,8 @@ def card_tummytime_day(context, child, date=None):
         "last": instances.first(),
         "empty": empty,
         "hide_empty": _hide_empty(context),
+        "child": child,
+        "perms": perms,
     }
 
 
