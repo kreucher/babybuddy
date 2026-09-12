@@ -58,6 +58,7 @@ def set_initial_values(kwargs, form_type):
                     "start": end - timezone.timedelta(minutes=duration),
                     "end": end,
                     "type": "breast milk",
+                    "method": "both breasts",
                 }
             )
 

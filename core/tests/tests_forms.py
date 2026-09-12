@@ -91,6 +91,7 @@ class InitialValuesTestCase(FormsTestCaseBase):
                 )
                 initial = page.context["form"].initial
                 self.assertEqual(initial["type"], "breast milk")
+                self.assertEqual(initial["method"], "both breasts")
                 self.assertEqual(
                     initial["end"] - initial["start"],
                     timezone.timedelta(minutes=minutes),
@@ -115,7 +116,7 @@ class InitialValuesTestCase(FormsTestCaseBase):
                 "duration": 10,
             },
         )
-        self.assertNotEqual(page.context["form"].initial.get("method"), "bottle")
+        self.assertEqual(page.context["form"].initial["method"], "both breasts")
 
     def test_invalid_breastfeeding_duration_is_ignored(self):
         page = self.c.get(
