@@ -24,27 +24,35 @@
     {% endif %}
     {% if perms.core.add_feeding %}
         <p class="small text-body-secondary mt-3 mb-2">{% trans "Formula bottle" %}</p>
-        <form method="post"
-              action="{% url 'core:formula-bottle-quick-log' child.slug %}">
-            {% csrf_token %}
-            <div class="btn-group w-100" role="group">
-                <button class="btn btn-outline-primary btn-sm"
-                        type="submit"
-                        name="amount"
-                        value="30">30 mL</button>
-                <button class="btn btn-outline-primary btn-sm"
-                        type="submit"
-                        name="amount"
-                        value="40">40 mL</button>
-                <button class="btn btn-outline-primary btn-sm"
-                        type="submit"
-                        name="amount"
-                        value="50">50 mL</button>
-                <button class="btn btn-outline-primary btn-sm"
-                        type="submit"
-                        name="amount"
-                        value="60">60 mL</button>
-            </div>
-        </form>
+        <div class="d-flex gap-1 w-100" role="group">
+            <form class="flex-fill"
+                  method="post"
+                  action="{% url 'core:formula-bottle-quick-log' child.slug %}">
+                {% csrf_token %}
+                <input type="hidden" name="amount" value="30">
+                <button class="btn btn-outline-primary btn-sm w-100" type="submit">30 mL</button>
+            </form>
+            <form class="flex-fill"
+                  method="post"
+                  action="{% url 'core:formula-bottle-quick-log' child.slug %}">
+                {% csrf_token %}
+                <input type="hidden" name="amount" value="40">
+                <button class="btn btn-outline-primary btn-sm w-100" type="submit">40 mL</button>
+            </form>
+            <form class="flex-fill"
+                  method="post"
+                  action="{% url 'core:formula-bottle-quick-log' child.slug %}">
+                {% csrf_token %}
+                <input type="hidden" name="amount" value="50">
+                <button class="btn btn-outline-primary btn-sm w-100" type="submit">50 mL</button>
+            </form>
+            <form class="flex-fill"
+                  method="post"
+                  action="{% url 'core:formula-bottle-quick-log' child.slug %}">
+                {% csrf_token %}
+                <input type="hidden" name="amount" value="60">
+                <button class="btn btn-outline-primary btn-sm w-100" type="submit">60 mL</button>
+            </form>
+        </div>
     {% endif %}
 {% endblock %}

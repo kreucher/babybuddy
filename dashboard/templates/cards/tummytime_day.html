@@ -22,24 +22,29 @@
         {% if perms.core.add_tummytime %}
             <li class="list-group-item">
                 <p class="small text-body-secondary mb-2">{% trans "Add ending now" %}</p>
-                <form method="post"
-                      action="{% url 'core:tummy-time-quick-log' child.slug %}">
-                    {% csrf_token %}
-                    <div class="btn-group w-100" role="group">
-                        <button class="btn btn-outline-primary btn-sm"
-                                type="submit"
-                                name="duration"
-                                value="5">5 {% trans "min" %}</button>
-                        <button class="btn btn-outline-primary btn-sm"
-                                type="submit"
-                                name="duration"
-                                value="10">10 {% trans "min" %}</button>
-                        <button class="btn btn-outline-primary btn-sm"
-                                type="submit"
-                                name="duration"
-                                value="15">15 {% trans "min" %}</button>
-                    </div>
-                </form>
+                <div class="d-flex gap-1 w-100" role="group">
+                    <form class="flex-fill"
+                          method="post"
+                          action="{% url 'core:tummy-time-quick-log' child.slug %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="duration" value="5">
+                        <button class="btn btn-outline-primary btn-sm w-100" type="submit">5 {% trans "min" %}</button>
+                    </form>
+                    <form class="flex-fill"
+                          method="post"
+                          action="{% url 'core:tummy-time-quick-log' child.slug %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="duration" value="10">
+                        <button class="btn btn-outline-primary btn-sm w-100" type="submit">10 {% trans "min" %}</button>
+                    </form>
+                    <form class="flex-fill"
+                          method="post"
+                          action="{% url 'core:tummy-time-quick-log' child.slug %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="duration" value="15">
+                        <button class="btn btn-outline-primary btn-sm w-100" type="submit">15 {% trans "min" %}</button>
+                    </form>
+                </div>
             </li>
         {% endif %}
     </ul>
