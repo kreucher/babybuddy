@@ -356,7 +356,7 @@ class BreastfeedingCancel(PermissionRequiredMixin, RedirectView):
 class FormulaBottleQuickLog(PermissionRequiredMixin, RedirectView):
     http_method_names = ["post"]
     permission_required = ("core.view_child", "core.add_feeding")
-    allowed_amounts = {30, 40, 50, 60}
+    allowed_amounts = {30, 40, 50, 60, 70}
 
     def post(self, request, *args, **kwargs):
         child = get_object_or_404(models.Child, slug=kwargs["slug"])

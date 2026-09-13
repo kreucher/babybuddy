@@ -417,7 +417,7 @@ class FormulaBottleQuickLogTestCase(TestCase):
         self.assertEqual(self.client.get(self.url()).status_code, 405)
 
     def test_valid_amounts_create_feeding_and_redirect(self):
-        for amount in [30, 40, 50, 60]:
+        for amount in [30, 40, 50, 60, 70]:
             with self.subTest(amount=amount):
                 response = self.client.post(self.url(), {"amount": amount}, follow=True)
                 self.assertEqual(response.status_code, 200)

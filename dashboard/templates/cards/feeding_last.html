@@ -53,6 +53,13 @@
                 <input type="hidden" name="amount" value="60">
                 <button class="btn btn-outline-primary btn-sm w-100" type="submit">60 mL</button>
             </form>
+            <form class="flex-fill"
+                  method="post"
+                  action="{% url 'core:formula-bottle-quick-log' child.slug %}">
+                {% csrf_token %}
+                <input type="hidden" name="amount" value="70">
+                <button class="btn btn-outline-primary btn-sm w-100" type="submit">70 mL</button>
+            </form>
         </div>
     {% endif %}
 {% endblock %}
